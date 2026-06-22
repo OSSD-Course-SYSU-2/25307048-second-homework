@@ -2,13 +2,16 @@
 
 import { Piece } from '../models/Piece';
 import { Level } from '../models/Level';
-import { Direction, GameText, AnimationDuration } from '../constants/GameConstants';
+import { Direction, GameText } from '../constants/GameConstants';
 import { GameStateManager } from '../managers/GameStateManager';
 import { LevelManager } from '../managers/LevelManager';
+import { RecordManager } from '../managers/RecordManager';
 import { GameHeader } from '../components/GameHeader';
 import { GameBoard } from '../components/GameBoard';
 import { GameFooter } from '../components/GameFooter';
 import { LevelSelector } from '../components/LevelSelector';
+import { HistoryPage } from '../components/HistoryPage';
+import promptAction from '@ohos.promptAction';
 
 @Entry
 @Component
@@ -24,7 +27,12 @@ struct Index {
   @State levelName: string = '';
   @State isWin: boolean = false;
   @State showLevelSelector: boolean = false;
+  @State showHistoryPage: boolean = false;
   @State levels: Level[] = [];
+  
+  // 游戏计时
+  private startTime: number = 0;
+  private cellSize: number = 65;
   
   // 生命周期:页面即将显示
   aboutToAppear() {
@@ -35,9 +43,15 @@ struct Index {
     this.initGame(1);
   }
   
+  // 页面即将消失
+  aboutToDisappear() {
+    // 可以在这里取消监听
+  }
+  
   // 初始化游戏
   private initGame(levelId: number) {
     this.gameManager.initGame(levelId);
+    this.startTime = Date.now(); // 记录开始时间
     this.updateState();
   }
   
@@ -114,19 +128,31 @@ struct Index {
     this.initGame(levelId);
   }
   
-  // 显示胜利对话框
-  private showWinDialog() {
-    AlertDialog.show({
-      title: GameText.WIN_MESSAGE,
-      message: `恭喜完成关卡: ${this.levelName}\n总共移动: ${this.moveCount} 步`,
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      primaryButton: {
-        value: '确定',
-        action: () => {
-          // 可以选择重置或切换关卡
-        }
-      }
+  // 显示胜利对话框 - 古风样式
+  private async showWinDialog() {
+    // 计算用时
+    const endTime = Date.now();
+    const duration = Math.floor((endTime - this.startTime) / 1000); // 秒
+    
+    // 保存通关记录
+    const recordManager = RecordManager.getInstance();
+    const record = await recordManager.addRecord(
+      this.currentLevelId,
+      this.levelName,
+      this.moveCount,
+      duration
+    );
+    
+    // 构建提示消息
+    let message = `🎉 恭喜通关 🎉\n关卡：${this.levelName}\n步数：${this.moveCount} 步\n用时：${record.durationText}`;
+    
+    if (record.isBest) {
+      message += '\n🏆 刷新最佳成绩！';
+    }
+    
+    promptAction.showToast({
+      message: message,
+      duration: 3000
     });
   }
   
@@ -138,27 +164,31 @@ struct Index {
         moveCount: this.moveCount
       })
       
-      // 棋盘区域
-      GameBoard({
-        pieces: this.pieces,
-        selectedPieceId: this.selectedPieceId,
-        onPieceClick: (pieceId: string) => {
-          this.handlePieceClick(pieceId);
-        },
-        onPieceMove: (pieceId: string, direction: Direction) => {
-          this.handlePieceMove(pieceId, direction);
+      // 可滚动的内容区域
+      Scroll() {
+        Column() {
+          // 棋盘区域
+          GameBoard({
+            pieces: this.pieces,
+            selectedPieceId: this.selectedPieceId,
+            cellSize: this.cellSize,
+            onPieceClick: (pieceId: string) => {
+              this.handlePieceClick(pieceId);
+            },
+            onPieceMove: (pieceId: string, direction: Direction) => {
+              this.handlePieceMove(pieceId, direction);
+            }
+          })
+          
+          // 控制按钮区域
+          this.ControlPanel()
         }
-      })
-      
-      // 按钮区域
-      GameFooter({
-        onReset: () => {
-          this.handleReset();
-        },
-        onSelectLevel: () => {
-          this.handleShowLevelSelector();
-        }
-      })
+        .width('100%')
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Off)
       
       // 关卡选择器
       LevelSelector({
@@ -172,9 +202,105 @@ struct Index {
           this.handleCloseLevelSelector();
         }
       })
+      
+      // 历史记录页面
+      if (this.showHistoryPage) {
+        HistoryPage({
+          onClose: () => {
+            this.showHistoryPage = false;
+          }
+        })
+      }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F0F0F0')
+    .backgroundColor('#1A1410') // 墨黑色背景 - 古风主题
+  }
+  
+  // 控制面板组件
+  @Builder ControlPanel() {
+    Column() {
+      // 提示文字
+      Text('滑动棋子进行移动')
+        .fontSize(13)
+        .fontColor('#C9A961')
+        .margin({ bottom: 10 })
+      
+      // 分割线
+      Row() {
+        Column()
+          .width(40)
+          .height(2)
+          .backgroundColor('#8B7355')
+        
+        Text('◆')
+          .fontSize(11)
+          .fontColor('#D4AF37')
+          .margin({ left: 6, right: 6 })
+        
+        Column()
+          .width(40)
+          .height(2)
+          .backgroundColor('#8B7355')
+      }
+      .margin({ bottom: 10 })
+      
+      // 功能按钮
+      Column() {
+        // 第一行：重置和历史记录
+        Row() {
+          Button(GameText.RESET)
+            .fontSize(15)
+            .fontColor('#8B4513')
+            .backgroundColor('#B8860B')
+            .borderRadius(8)
+            .border({ width: 3, color: '#D4AF37', radius: 8 })
+            .width(90)
+            .height(40)
+            .shadow({ radius: 8, color: '#80000000', offsetX: 2, offsetY: 3 })
+            .onClick(() => {
+              this.handleReset();
+            })
+          
+          Button('历史')
+            .fontSize(15)
+            .fontColor('#8B4513')
+            .backgroundColor('#B8860B')
+            .borderRadius(8)
+            .border({ width: 3, color: '#D4AF37', radius: 8 })
+            .width(90)
+            .height(40)
+            .shadow({ radius: 8, color: '#80000000', offsetX: 2, offsetY: 3 })
+            .margin({ left: 10 })
+            .onClick(() => {
+              this.showHistoryPage = true;
+            })
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.Center)
+        
+        // 第二行：选关
+        Button(GameText.SELECT_LEVEL)
+          .fontSize(15)
+          .fontColor('#8B4513')
+          .backgroundColor('#B8860B')
+          .borderRadius(8)
+          .border({ width: 3, color: '#D4AF37', radius: 8 })
+          .width(90)
+          .height(40)
+          .shadow({ radius: 8, color: '#80000000', offsetX: 2, offsetY: 3 })
+          .margin({ top: 10 })
+          .onClick(() => {
+            this.handleShowLevelSelector();
+          })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+    }
+    .width('100%')
+    .padding({ left: 12, right: 12, top: 10, bottom: 12 })
+    .backgroundColor('#2C2418')
+    .border({ width: { top: 2 }, color: { top: '#D4AF37' } })
+    .margin({ top: 12 })
   }
 }

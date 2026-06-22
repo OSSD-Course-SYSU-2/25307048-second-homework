@@ -1,17 +1,26 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { RecordManager } from '../managers/RecordManager';
 
 const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
-  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+  async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
       hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
+    
+    // 初始化记录管理器
+    try {
+      await RecordManager.getInstance().init(this.context);
+      hilog.info(DOMAIN, 'testTag', '%{public}s', 'RecordManager initialized successfully');
+    } catch (err) {
+      hilog.error(DOMAIN, 'testTag', 'Failed to initialize RecordManager. Cause: %{public}s', JSON.stringify(err));
+    }
   }
 
   onDestroy(): void {

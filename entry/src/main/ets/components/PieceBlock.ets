@@ -18,31 +18,35 @@ export struct PieceBlock {
   
   build() {
     Stack() {
-      // 棋子主体
+      // 棋子主体 - 严丝合缝对齐格子
       Column() {
+        // 棋子名称 - 金色篆书效果
         Text(this.piece.name)
-          .fontSize(this.piece.type === 'CAOCAO' ? 20 : 16)
-          .fontColor(Color.White)
+          .fontSize(this.piece.type === 'CAOCAO' ? 26 : 20)
+          .fontColor('#D4AF37') // 金色文字
           .fontWeight(FontWeight.Bold)
+          .letterSpacing(3) // 字间距，篆书效果
       }
-      .width(this.piece.size.width * this.cellSize - 4)
-      .height(this.piece.size.height * this.cellSize - 4)
+      .width(this.piece.size.width * this.cellSize) // 宽度等于格子宽度
+      .height(this.piece.size.height * this.cellSize) // 高度等于格子高度
       .backgroundColor(this.piece.color)
-      .borderRadius(8)
+      .borderRadius(4)
       .justifyContent(FlexAlign.Center)
       .border({
-        width: this.isSelected ? 3 : 1,
-        color: this.isSelected ? PieceColors.SELECTED_BORDER : Color.White,
-        radius: 8
+        width: this.isSelected ? 4 : 3,
+        color: this.isSelected ? '#FFD700' : '#D4AF37', // 金色边框
+        radius: 4
       })
+      // 立体阴影效果 - 让棋子"浮"在棋盘上
       .shadow({
-        radius: this.isSelected ? 12 : 6,
-        color: '#40000000',
+        radius: this.isSelected ? 18 : 10,
+        color: this.isSelected ? '#80D4AF37' : '#60000000',
         offsetX: 2,
-        offsetY: 2
+        offsetY: 3
       })
+      .padding({ top: 4, bottom: 4, left: 4, right: 4 })
     }
-    // 使用计算属性确保位置更新
+    // 使用计算属性确保位置更新 - 从格子左上角开始
     .position({
       x: this.getPositionX(),
       y: this.getPositionY()
@@ -61,7 +65,7 @@ export struct PieceBlock {
           
           const offsetX = event.offsetX;
           const offsetY = event.offsetY;
-          const threshold = 10; // 降低移动阈值,更容易触发
+          const threshold = 15; // 移动阈值
           
           // 判断移动方向
           if (Math.abs(offsetX) > Math.abs(offsetY)) {
@@ -83,13 +87,13 @@ export struct PieceBlock {
     )
   }
   
-  // 计算X位置
+  // 计算X位置 - 对齐格子左边缘
   private getPositionX(): number {
-    return this.piece.position.col * this.cellSize + 2;
+    return this.piece.position.col * this.cellSize;
   }
   
-  // 计算Y位置
+  // 计算Y位置 - 对齐格子上边缘
   private getPositionY(): number {
-    return this.piece.position.row * this.cellSize + 2;
+    return this.piece.position.row * this.cellSize;
   }
 }

@@ -1,0 +1,25 @@
+{
+  "name": "huarongdao-monorepo",
+  "version": "1.0.0",
+  "description": "华容道游戏 - 一次开发多端部署",
+  "private": true,
+  "workspaces": [
+    "core",
+    "platform",
+    "ui/web"
+  ],
+  "scripts": {
+    "build:core": "cd core && npm run build",
+    "build:web": "cd ui/web && npm run build",
+    "build:all": "npm run build:core && npm run build:web",
+    "dev:web": "cd ui/web && npm run dev",
+    "test": "cd core && npm run test",
+    "lint": "cd core && npm run lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

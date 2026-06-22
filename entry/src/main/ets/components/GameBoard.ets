@@ -1,7 +1,7 @@
 // 棋盘组件
 
 import { Piece } from '../models/Piece';
-import { Direction, BOARD_COLS, BOARD_ROWS, CELL_SIZE } from '../constants/GameConstants';
+import { Direction, BOARD_COLS, BOARD_ROWS } from '../constants/GameConstants';
 import { PieceBlock } from './PieceBlock';
 
 @Component
@@ -10,6 +10,8 @@ export struct GameBoard {
   @Prop pieces: Piece[];
   // 选中的棋子ID
   @Prop selectedPieceId: string | null = null;
+  // 单元格尺寸（支持动态调整）
+  @Prop cellSize: number = 75;
   // 点击回调
   onPieceClick?: (pieceId: string) => void;
   // 移动回调
@@ -18,41 +20,60 @@ export struct GameBoard {
   build() {
     Column() {
       Stack() {
-        // 棋盘背景
+        // 棋盘背景 - 深黑色木质底座
         Column() {
-          // 绘制网格线
+          // 绘制网格线 - 深黑色格子
           ForEach([0, 1, 2, 3, 4], (row: number) => {
             Row() {
               ForEach([0, 1, 2, 3], (col: number) => {
-                Column()
-                  .width(CELL_SIZE)
-                  .height(CELL_SIZE)
-                  .backgroundColor('#F5F5F5')
-                  .border({ width: 1, color: '#E0E0E0' })
+                Column() {
+                  // 格子内容区域 - 深黑色底座
+                  Column()
+                    .width('100%')
+                    .height('100%')
+                }
+                .width(this.cellSize)
+                .height(this.cellSize)
+                .backgroundColor('#1A1410') // 深黑色底座
               }, (col: number) => col.toString())
             }
           }, (row: number) => row.toString())
         }
-        .width(BOARD_COLS * CELL_SIZE)
-        .height(BOARD_ROWS * CELL_SIZE)
-        .backgroundColor('#FAFAFA')
-        .border({ width: 2, color: '#BDBDBD', radius: 8 })
+        .width(BOARD_COLS * this.cellSize)
+        .height(BOARD_ROWS * this.cellSize)
+        .backgroundColor('#0D0D0D') // 棋盘底色 - 纯黑
+        .border({ 
+          width: 4, 
+          color: '#D4AF37', // 金色边框
+          radius: 4 
+        })
+        .shadow({
+          radius: 25,
+          color: '#90000000',
+          offsetX: 0,
+          offsetY: 10
+        })
         
-        // 出口标识
+        // 出口标识 - 古风装饰
         Row() {
-          Text('出口')
-            .fontSize(14)
-            .fontColor('#FF6B6B')
+          Text('▼ 出口 ▼')
+            .fontSize(16)
+            .fontColor('#D4AF37')
             .fontWeight(FontWeight.Bold)
+            .letterSpacing(2)
         }
-        .width(CELL_SIZE * 2)
-        .height(30)
-        .backgroundColor('#FFE5E5')
-        .borderRadius(4)
+        .width(this.cellSize * 2 + 20)
+        .height(40)
+        .backgroundColor('#2C2418')
+        .border({ 
+          width: 2, 
+          color: '#8B7355',
+          radius: 2 
+        })
         .justifyContent(FlexAlign.Center)
         .position({
-          x: CELL_SIZE,
-          y: BOARD_ROWS * CELL_SIZE + 5
+          x: this.cellSize - 10,
+          y: BOARD_ROWS * this.cellSize + 8
         })
         
         // 渲染所有棋子
@@ -60,7 +81,7 @@ export struct GameBoard {
           PieceBlock({
             piece: piece,
             isSelected: piece.id === this.selectedPieceId,
-            cellSize: CELL_SIZE,
+            cellSize: this.cellSize,
             onPieceClick: this.onPieceClick,
             onPieceMove: this.onPieceMove
           })
@@ -69,63 +90,8 @@ export struct GameBoard {
           return `${piece.id}_${piece.position.row}_${piece.position.col}`;
         })
       }
-      .width(BOARD_COLS * CELL_SIZE)
-      .height(BOARD_ROWS * CELL_SIZE + 40)
-      
-      // 方向控制按钮(仅当有选中棋子时显示)
-      if (this.selectedPieceId !== null) {
-        Row() {
-          Button('↑')
-            .width(50)
-            .height(50)
-            .fontSize(24)
-            .onClick(() => {
-              if (this.onPieceMove && this.selectedPieceId) {
-                this.onPieceMove(this.selectedPieceId, Direction.UP);
-              }
-            })
-          
-          Column() {
-            Row() {
-              Button('←')
-                .width(50)
-                .height(50)
-                .fontSize(24)
-                .onClick(() => {
-                  if (this.onPieceMove && this.selectedPieceId) {
-                    this.onPieceMove(this.selectedPieceId, Direction.LEFT);
-                  }
-                })
-              
-              Button('→')
-                .width(50)
-                .height(50)
-                .fontSize(24)
-                .onClick(() => {
-                  if (this.onPieceMove && this.selectedPieceId) {
-                    this.onPieceMove(this.selectedPieceId, Direction.RIGHT);
-                  }
-                })
-            }
-            .justifyContent(FlexAlign.SpaceBetween)
-            .width(120)
-          }
-          .margin({ left: 10, right: 10 })
-          
-          Button('↓')
-            .width(50)
-            .height(50)
-            .fontSize(24)
-            .onClick(() => {
-              if (this.onPieceMove && this.selectedPieceId) {
-                this.onPieceMove(this.selectedPieceId, Direction.DOWN);
-              }
-            })
-        }
-        .justifyContent(FlexAlign.Center)
-        .width('100%')
-        .margin({ top: 10 })
-      }
+      .width(BOARD_COLS * this.cellSize)
+      .height(BOARD_ROWS * this.cellSize + 55)
     }
   }
 }
